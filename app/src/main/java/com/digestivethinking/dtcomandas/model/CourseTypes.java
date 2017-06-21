@@ -14,11 +14,6 @@ public class CourseTypes {
         mCourseTypes = new LinkedList<>();
     }
 
-    public CourseTypes(String JSONString) {
-        this();
-        this.processJSON(JSONString);
-    }
-
     public static CourseTypes getInstance() {
         if (mInstance == null) {
             mInstance = new CourseTypes();
@@ -54,7 +49,7 @@ public class CourseTypes {
 
     }
 
-    private void processJSON(String JSONString) {
+    public void processJSON(String JSONString) {
         try {
             JSONArray jsonRoot = new JSONArray(JSONString);
 

@@ -15,11 +15,6 @@ public class Alergens {
         mAlergens = new LinkedList<>();
     }
 
-    public Alergens(String JSONString) {
-        this();
-        this.processJSONAlergens(JSONString);
-    }
-
     public static Alergens getInstance() {
         if (mInstance == null) {
             mInstance = new Alergens();
@@ -55,7 +50,7 @@ public class Alergens {
         mAlergens.add(Alergen);
     }
 
-    private void processJSONAlergens(String JSONString) {
+    public void processJSONAlergens(String JSONString) {
         try {
             JSONArray jsonRoot = new JSONArray(JSONString);
             for (int i = 0; i < jsonRoot.length(); i++) {

@@ -2,15 +2,14 @@ package com.digestivethinking.dtcomandas;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 
 import com.digestivethinking.dtcomandas.model.Alergen;
 import com.digestivethinking.dtcomandas.model.Alergens;
 import com.digestivethinking.dtcomandas.model.Course;
-import com.digestivethinking.dtcomandas.model.CourseType;
 import com.digestivethinking.dtcomandas.model.CourseTypes;
 import com.digestivethinking.dtcomandas.model.MainMenu;
 
@@ -18,12 +17,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.DataInputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -33,9 +30,7 @@ public class TableStatusActivity extends AppCompatActivity {
     public static final String URL_IMAGENES = "http://comandas.digestivethinking.com/";
     public static final int PAQ_SIZE = 1024;
 
-    private CourseTypes mainCoursesTypes;
-    private Alergens menuAlergens;
-    private MainMenu theMenu;
+    private boolean isFirstExecution;
 
     public TableStatusActivity() {
     }
@@ -45,12 +40,14 @@ public class TableStatusActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_table_status);
 
-        if (isDataSaved()) {
+        Log.v(TAG, ">>>>>-----> onCreate <-----<<<<<");
 
-        } else {
-            Log.d(TAG, "Descarga de todo");
-            menuDownloader.execute("");
-            int a = 1;
+        isFirstExecution = !PreferenceManager.getDefaultSharedPreferences(this)
+                .getBoolean(this.getString(R.string.Server_data_downloaded), false);;
+
+        if (MainMenu.getInstance().getCount() == 0) {
+            Log.v(TAG, isFirstExecution ? ">>>>>-----> Descargando de la nube <-----<<<<<" : ">>>>>-----> Cargando datos de local <-----<<<<<");
+            menuMaker.execute(isFirstExecution);
         }
     }
 
@@ -58,55 +55,61 @@ public class TableStatusActivity extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        Log.d(TAG, "Por aquí pasa");
+        Log.v(TAG, "Por aquí pasa");
     }
 
-    private boolean isDataSaved() {
-        return PreferenceManager.getDefaultSharedPreferences(this)
-                .getBoolean(this.getString(R.string.Server_data_downloaded), false);
-    }
-
-    private AsyncTask<String, Integer, CourseTypes> menuDownloader = new AsyncTask<String, Integer, CourseTypes>() {
+    private AsyncTask<Boolean, Integer, CourseTypes> menuMaker = new AsyncTask<Boolean, Integer, CourseTypes>() {
         @Override
-        protected CourseTypes doInBackground(String... params) {
-            return downloadAndSaveCourseTypes();
+        protected CourseTypes doInBackground(Boolean... params) {
+
+            if (params[0]) { //isFirstExecution
+                return downloadAndSaveCourseTypes();
+            } else {
+                return loadLocalCourseTypes();
+            }
+
         }
 
         @Override
         protected void onPostExecute(CourseTypes courseTypes) {
             super.onPostExecute(courseTypes);
 
-            mainCoursesTypes = courseTypes;
-            alergensDownloader.execute("");
+            alergensMaker.execute(isFirstExecution);
         }
     };
 
-    private AsyncTask<String, Integer, Alergens> alergensDownloader = new AsyncTask<String, Integer, Alergens>() {
+    private AsyncTask<Boolean, Integer, Alergens> alergensMaker = new AsyncTask<Boolean, Integer, Alergens>() {
         @Override
-        protected Alergens doInBackground(String... params) {
-            return downloadAndSaveAlergens();
+        protected Alergens doInBackground(Boolean... params) {
+            if (params[0]) { // isFirstExecution
+                return downloadAndSaveAlergens();
+            } else {
+                return loadLocalAlergens();
+            }
         }
 
         @Override
         protected void onPostExecute(Alergens alergens) {
             super.onPostExecute(alergens);
 
-            menuAlergens = alergens;
-            coursesDownloader.execute("");
+            courseListMaker.execute(isFirstExecution);
         }
     };
 
-    private AsyncTask<String, Integer, MainMenu> coursesDownloader = new AsyncTask<String, Integer, MainMenu>() {
+    private AsyncTask<Boolean, Integer, MainMenu> courseListMaker = new AsyncTask<Boolean, Integer, MainMenu>() {
         @Override
-        protected MainMenu doInBackground(String... params) {
-            return downloadAndSaveCourses();
+        protected MainMenu doInBackground(Boolean... params) {
+            if (params[0]) { // isFirstExecution
+                return downloadAndSaveCourses();
+            } else {
+                return loadLocalCourses();
+            }
         }
 
         @Override
         protected void onPostExecute(MainMenu mainMenu) {
             super.onPostExecute(mainMenu);
 
-            theMenu = mainMenu;
             PreferenceManager.getDefaultSharedPreferences(TableStatusActivity.this)
                     .edit()
                     .putBoolean(TableStatusActivity.this.getString(R.string.Server_data_downloaded), true)
@@ -118,9 +121,24 @@ public class TableStatusActivity extends AppCompatActivity {
         try {
             String JSONString = universalDownload(this.getString(R.string.Url_course_types));
             saveFile(this.getString(R.string.File_course_types), JSONString);
+            CourseTypes courseTypes = CourseTypes.getInstance();
+            courseTypes.processJSON(JSONString);
 
-            return new CourseTypes(JSONString);
+            return courseTypes;
 
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+    private CourseTypes loadLocalCourseTypes() {
+        try {
+            String JSONString = readFile(this.getString(R.string.File_course_types));
+            CourseTypes courseTypes = CourseTypes.getInstance();
+            courseTypes.processJSON(JSONString);
+
+            return courseTypes;
         } catch (Exception ex) {
             ex.printStackTrace();
             return null;
@@ -131,7 +149,22 @@ public class TableStatusActivity extends AppCompatActivity {
         try {
             String JSONString = universalDownload(this.getString(R.string.Url_alergenos));
             saveFile(this.getString(R.string.File_alergenos), JSONString);
-            return new Alergens(JSONString);
+            Alergens alergens = Alergens.getInstance();
+            alergens.processJSONAlergens(JSONString);
+            return alergens;
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+    private Alergens loadLocalAlergens() {
+        try {
+            String JSONString = readFile(this.getString(R.string.File_alergenos));
+            Alergens alergens = Alergens.getInstance();
+            alergens.processJSONAlergens(JSONString);
+            return alergens;
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -151,10 +184,21 @@ public class TableStatusActivity extends AppCompatActivity {
         }
     }
 
+    private MainMenu loadLocalCourses() {
+        try {
+            String JSONString = readFile(this.getString(R.string.File_courses));
+            return processJSONCourses(JSONString);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
     private MainMenu processJSONCourses(String JSONString) {
         try {
             JSONArray jsonRoot = new JSONArray(JSONString);
-            MainMenu courses = new MainMenu();
+            MainMenu courses = MainMenu.getInstance();
 
             for (int i = 0; i < jsonRoot.length(); i++) {
 
@@ -165,11 +209,11 @@ public class TableStatusActivity extends AppCompatActivity {
                 int courseType = JSONCourse.getInt("type");
                 JSONArray alergens = JSONCourse.getJSONArray("alergenos");
 
-                course.setCourseType(mainCoursesTypes.getCourseTypeById(courseType));
+                course.setCourseType(CourseTypes.getInstance().getCourseTypeById(courseType));
 
                 for (int j = 0; j < alergens.length(); j++) {
                     int alergenId = alergens.getJSONObject(j).getInt("id");
-                    Alergen alergen = menuAlergens.getAlergenById(alergenId);
+                    Alergen alergen = Alergens.getInstance().getAlergenById(alergenId);
                     course.addAlergen(alergen);
                 }
 
