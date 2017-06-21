@@ -1,5 +1,6 @@
 package com.digestivethinking.dtcomandas;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
@@ -16,6 +17,11 @@ import com.digestivethinking.dtcomandas.model.MainMenu;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -24,6 +30,7 @@ public class TableStatusActivity extends AppCompatActivity {
 
     private static final String TAG = TableStatusActivity.class.getSimpleName();
     public static final String URL_IMAGENES = "http://comandas.digestivethinking.com/";
+    public static final int PAQ_SIZE = 1024;
 
     private CourseTypes mainCoursesTypes;
     private Alergens menuAlergens;
@@ -37,11 +44,11 @@ public class TableStatusActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_table_status);
 
-        if (!isDataSaved()) {
+        if (isDataSaved()) {
+
+        } else {
             Log.d(TAG, "Descarga de todo");
-
             menuDownloader.execute("");
-
         }
     }
 
@@ -60,7 +67,7 @@ public class TableStatusActivity extends AppCompatActivity {
     private AsyncTask<String, Integer, CourseTypes> menuDownloader = new AsyncTask<String, Integer, CourseTypes>() {
         @Override
         protected CourseTypes doInBackground(String... params) {
-            return downloadCourseTypes();
+            return downloadAndSaveCourseTypes();
         }
 
         @Override
@@ -75,7 +82,7 @@ public class TableStatusActivity extends AppCompatActivity {
     private AsyncTask<String, Integer, Alergens> alergensDownloader = new AsyncTask<String, Integer, Alergens>() {
         @Override
         protected Alergens doInBackground(String... params) {
-            return downloadAlergens();
+            return downloadAndSaveAlergens();
         }
 
         @Override
@@ -90,7 +97,7 @@ public class TableStatusActivity extends AppCompatActivity {
     private AsyncTask<String, Integer, MainMenu> coursesDownloader = new AsyncTask<String, Integer, MainMenu>() {
         @Override
         protected MainMenu doInBackground(String... params) {
-            return downloadCourses();
+            return downloadAndSaveCourses();
         }
 
         @Override
@@ -102,13 +109,13 @@ public class TableStatusActivity extends AppCompatActivity {
                     .edit()
                     .putBoolean(TableStatusActivity.this.getString(R.string.Server_data_downloaded), true)
                     .apply();
-
         }
     };
 
-    private CourseTypes downloadCourseTypes() {
+    private CourseTypes downloadAndSaveCourseTypes() {
         try {
             String JSONString = universalDownload(this.getString(R.string.Url_course_types));
+            saveFile(this.getString(R.string.File_course_types), JSONString);
 
             JSONArray jsonRoot = new JSONArray(JSONString);
             CourseTypes courseTypes = new CourseTypes();
@@ -133,9 +140,10 @@ public class TableStatusActivity extends AppCompatActivity {
 
     }
 
-    private Alergens downloadAlergens() {
+    private Alergens downloadAndSaveAlergens() {
         try {
             String JSONString = universalDownload(this.getString(R.string.Url_alergenos));
+            saveFile(this.getString(R.string.File_alergenos), JSONString);
 
             JSONArray jsonRoot = new JSONArray(JSONString);
             Alergens alergens = new Alergens();
@@ -159,9 +167,10 @@ public class TableStatusActivity extends AppCompatActivity {
 
     }
 
-    private MainMenu downloadCourses() {
+    private MainMenu downloadAndSaveCourses() {
         try {
             String JSONString = universalDownload(this.getString(R.string.Url_courses));
+            saveFile(this.getString(R.string.File_courses), JSONString);
 
             JSONArray jsonRoot = new JSONArray(JSONString);
             MainMenu courses = new MainMenu();
@@ -204,7 +213,7 @@ public class TableStatusActivity extends AppCompatActivity {
 
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.connect();
-            byte data[] = new byte[1024];
+            byte data[] = new byte[PAQ_SIZE];
             int downloadedBytes;
             input = con.getInputStream();
             StringBuilder sb = new StringBuilder();
@@ -218,5 +227,40 @@ public class TableStatusActivity extends AppCompatActivity {
             ex.printStackTrace();
             return null;
         }
+    }
+
+    private void saveFile(String name, String jsonText) {
+        try {
+
+            FileOutputStream fos = openFileOutput(name, Context.MODE_PRIVATE);
+            DataOutputStream dos = new DataOutputStream(fos);
+            dos.writeBytes(jsonText);
+            fos.close();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return;
+        }
+    }
+
+    private String readFile(String name) {
+        byte data[] = new byte[PAQ_SIZE];
+        int downloadedBytes;
+
+        try {
+            StringBuilder sb = new StringBuilder();
+            FileInputStream fis = openFileInput(name);
+            DataInputStream dis = new DataInputStream(fis);
+
+            while ((downloadedBytes = dis.read(data)) != -1) {
+                sb.append(new String(data, 0, downloadedBytes));
+            }
+
+            return sb.toString();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+
     }
 }

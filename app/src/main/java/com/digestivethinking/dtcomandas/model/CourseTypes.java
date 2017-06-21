@@ -11,6 +11,12 @@ public class CourseTypes {
         mCourseTypes = new LinkedList<>();
     }
 
+    public CourseTypes(String JSONString)  {
+        //TODO Creación a partir de un json
+
+        mCourseTypes = new LinkedList<>();
+    }
+
     public static CourseTypes getInstance() {
         if (mInstance == null) {
             mInstance = new CourseTypes();
@@ -45,4 +51,6 @@ public class CourseTypes {
         return null;
 
     }
+
+
 }
