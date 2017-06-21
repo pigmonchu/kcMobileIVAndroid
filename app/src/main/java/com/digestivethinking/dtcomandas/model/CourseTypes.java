@@ -1,5 +1,8 @@
 package com.digestivethinking.dtcomandas.model;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.LinkedList;
 
 public class CourseTypes {
@@ -11,10 +14,9 @@ public class CourseTypes {
         mCourseTypes = new LinkedList<>();
     }
 
-    public CourseTypes(String JSONString)  {
-        //TODO Creación a partir de un json
-
-        mCourseTypes = new LinkedList<>();
+    public CourseTypes(String JSONString) {
+        this();
+        this.processJSON(JSONString);
     }
 
     public static CourseTypes getInstance() {
@@ -49,6 +51,20 @@ public class CourseTypes {
             }
         }
         return null;
+
+    }
+
+    private void processJSON(String JSONString) {
+        try {
+            JSONArray jsonRoot = new JSONArray(JSONString);
+
+            for (int i = 0; i < jsonRoot.length(); i++) {
+                JSONObject JSONCourseType = jsonRoot.getJSONObject(i);
+                this.add(new CourseType(JSONCourseType));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 
     }
 

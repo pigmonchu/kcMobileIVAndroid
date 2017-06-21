@@ -1,5 +1,7 @@
 package com.digestivethinking.dtcomandas.model;
 
+import org.json.JSONObject;
+
 public class Alergen {
     private int mId;
     private String mName;
@@ -9,6 +11,17 @@ public class Alergen {
         mId = id;
         mName = name;
         mImage = image;
+    }
+
+    public Alergen(JSONObject jsonObject) {
+        this(-1, "", "");
+        try {
+            mName = jsonObject.getString("name");
+            mImage = jsonObject.getString("image");
+            mId = jsonObject.getInt("id");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     public int getId() {

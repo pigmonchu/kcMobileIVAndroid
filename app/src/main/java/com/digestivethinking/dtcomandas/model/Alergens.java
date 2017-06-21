@@ -1,5 +1,8 @@
 package com.digestivethinking.dtcomandas.model;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.LinkedList;
 
 public class Alergens {
@@ -10,6 +13,11 @@ public class Alergens {
 
     public Alergens() {
         mAlergens = new LinkedList<>();
+    }
+
+    public Alergens(String JSONString) {
+        this();
+        this.processJSONAlergens(JSONString);
     }
 
     public static Alergens getInstance() {
@@ -45,6 +53,18 @@ public class Alergens {
 
     public void add(Alergen Alergen) {
         mAlergens.add(Alergen);
+    }
+
+    private void processJSONAlergens(String JSONString) {
+        try {
+            JSONArray jsonRoot = new JSONArray(JSONString);
+            for (int i = 0; i < jsonRoot.length(); i++) {
+                JSONObject JSONAlergen = jsonRoot.getJSONObject(i);
+                this.add(new Alergen(JSONAlergen));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
 

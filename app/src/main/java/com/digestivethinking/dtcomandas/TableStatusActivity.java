@@ -23,6 +23,7 @@ import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -49,6 +50,7 @@ public class TableStatusActivity extends AppCompatActivity {
         } else {
             Log.d(TAG, "Descarga de todo");
             menuDownloader.execute("");
+            int a = 1;
         }
     }
 
@@ -117,75 +119,52 @@ public class TableStatusActivity extends AppCompatActivity {
             String JSONString = universalDownload(this.getString(R.string.Url_course_types));
             saveFile(this.getString(R.string.File_course_types), JSONString);
 
-            JSONArray jsonRoot = new JSONArray(JSONString);
-            CourseTypes courseTypes = new CourseTypes();
+            return new CourseTypes(JSONString);
 
-            for (int i = 0; i < jsonRoot.length(); i++) {
-
-                JSONObject JSONCourseType = jsonRoot.getJSONObject(i);
-                String type = JSONCourseType.getString("type");
-                String short_type = JSONCourseType.getString("short_type");
-                String image = JSONCourseType.getString("image");
-                int id = JSONCourseType.getInt("id");
-
-                CourseType courseType = new CourseType(id, type, short_type, image);
-                courseTypes.add(courseType);
-
-            }
-            return courseTypes;
         } catch (Exception ex) {
             ex.printStackTrace();
             return null;
         }
-
     }
 
     private Alergens downloadAndSaveAlergens() {
         try {
             String JSONString = universalDownload(this.getString(R.string.Url_alergenos));
             saveFile(this.getString(R.string.File_alergenos), JSONString);
+            return new Alergens(JSONString);
 
-            JSONArray jsonRoot = new JSONArray(JSONString);
-            Alergens alergens = new Alergens();
-
-            for (int i = 0; i < jsonRoot.length(); i++) {
-
-                JSONObject JSONAlergen = jsonRoot.getJSONObject(i);
-                String name = JSONAlergen.getString("name");
-                String image = JSONAlergen.getString("image");
-                int id = JSONAlergen.getInt("id");
-
-                Alergen alergen = new Alergen(id, name, image);
-                alergens.add(alergen);
-
-            }
-            return alergens;
         } catch (Exception ex) {
             ex.printStackTrace();
             return null;
         }
-
     }
 
     private MainMenu downloadAndSaveCourses() {
         try {
             String JSONString = universalDownload(this.getString(R.string.Url_courses));
             saveFile(this.getString(R.string.File_courses), JSONString);
+            return processJSONCourses(JSONString);
 
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+    private MainMenu processJSONCourses(String JSONString) {
+        try {
             JSONArray jsonRoot = new JSONArray(JSONString);
             MainMenu courses = new MainMenu();
 
             for (int i = 0; i < jsonRoot.length(); i++) {
 
                 JSONObject JSONCourse = jsonRoot.getJSONObject(i);
-                String name = JSONCourse.getString("name");
-                String description = JSONCourse.getString("description");
-                Double price = JSONCourse.getDouble("price");
-                int id = JSONCourse.getInt("id");
+
+                Course course = new Course(JSONCourse);
+
                 int courseType = JSONCourse.getInt("type");
                 JSONArray alergens = JSONCourse.getJSONArray("alergenos");
 
-                Course course = new Course(id, name, description, price);
                 course.setCourseType(mainCoursesTypes.getCourseTypeById(courseType));
 
                 for (int j = 0; j < alergens.length(); j++) {
@@ -201,7 +180,6 @@ public class TableStatusActivity extends AppCompatActivity {
             ex.printStackTrace();
             return null;
         }
-
     }
 
     private String universalDownload(String strUrl) {

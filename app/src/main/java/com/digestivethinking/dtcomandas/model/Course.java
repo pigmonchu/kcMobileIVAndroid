@@ -1,5 +1,8 @@
 package com.digestivethinking.dtcomandas.model;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class Course {
     private int mId;
     private String mName;
@@ -16,6 +19,18 @@ public class Course {
 
         mCourseType = null;
         mAlergens = new Alergens();
+    }
+
+    public Course(JSONObject jsonObject) {
+        this(-1, "", "", 0.0);
+        try {
+            mName = jsonObject.getString("name");
+            mDescription = jsonObject.getString("description");
+            mPrice = jsonObject.getDouble("price");
+            mId = jsonObject.getInt("id");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     public int getId() {

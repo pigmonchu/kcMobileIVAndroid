@@ -1,6 +1,8 @@
 package com.digestivethinking.dtcomandas.model;
 
 
+import org.json.JSONObject;
+
 public class CourseType {
     private long mId;
     private String mType;
@@ -12,6 +14,18 @@ public class CourseType {
         mType = type;
         mShortType = shortType;
         mImage = image;
+    }
+
+    public CourseType(JSONObject jsonObject) {
+        this(-1, "", "", "");
+        try {
+            mType = jsonObject.getString("type");
+            mShortType = jsonObject.getString("short_type");
+            mImage = jsonObject.getString("image");
+            mId = jsonObject.getInt("id");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     public long getId() {
