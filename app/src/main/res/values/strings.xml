@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">DTComandas</string>
+    <string name="Server_data_downloaded">SERVER_DATA_DOWNLOADED</string>
+    <string name="Url_course_types">http://www.mocky.io/v2/59494945120000b907272838</string>
+    <string name="Url_alergenos">http://www.mocky.io/v2/594949ee120000ba0727283b</string>
+    <string name="Url_courses">http://www.mocky.io/v2/594a303610000061011aa37d</string>
 </resources>
